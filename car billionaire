@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>SP Car Game</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;background:#0f172a;font-family:sans-serif}
+
+/* मेन मेन्यू */
+#mainMenu{position:fixed;inset:0;background:linear-gradient(180deg,#090d16,#1e293b);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;z-index:30;text-align:center}
+#mainMenu h1{color:#facc15;font-size:34px;text-shadow:0 0 15px rgba(250,204,21,.4)}
+.preview-box{background:rgba(15,23,42,.85);border:2px solid #334155;border-radius:18px;padding:18px 34px;display:flex;flex-direction:column;align-items:center;gap:10px}
+#previewCar{width:56px;height:90px;border-radius:14px 14px 10px 10px;border:2px solid #fff;position:relative;transition:all .2s}
+#carNameTag{color:#e2e8f0;font-size:16px;font-weight:bold}
+
+.menu-btn{width:100%;max-width:270px;padding:16px 20px;font-size:20px;font-weight:bold;border:none;border-radius:14px;cursor:pointer;color:#090d16;box-shadow:0 6px 16px rgba(0,0,0,.35)}
+.menu-btn:active{transform:scale(.96)}
+#playBtn{background:#86efac} /* लाइट ग्रीन */
+#changeCarBtn{background:#fca5a5} /* लाइट रेड */
+
+/* गेम स्क्रीन */
+#road{position:fixed;inset:0;width:100vw;height:100vh;background:#1e293b;border-left:6px solid #facc15;border-right:6px solid #facc15}
+.line{position:absolute;top:-44px;bottom:0;width:5px;background:repeating-linear-gradient(to bottom,#fff 0 22px,transparent 22px 44px);opacity:.75;animation:mv .22s linear infinite}
+@keyframes mv{to{transform:translateY(44px)}}
+.l1{left:33.33%}.l2{left:66.66%}
+
+#hud{position:fixed;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;gap:8px;background:rgba(15,23,42,.88);padding:10px 12px;border-radius:14px;color:#fff;font-weight:bold;font-size:14px;z-index:12;border:1px solid rgba(255,255,255,.15)}
+.counts{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+#hamburgerBtn{background:#334155;color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:10px;width:36px;height:36px;font-size:20px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#hamburgerBtn:active{transform:scale(.94);background:#475569}
+
+#carBox{position:fixed;bottom:110px;width:33.33%;left:33.33%;text-align:center;transition:left .12s ease;z-index:5}
+#car{display:inline-block;width:58px;height:94px;border:2px solid #fff;border-radius:14px 14px 10px 10px;position:relative;animation:vibe .08s infinite alternate}
+@keyframes vibe{0%{transform:translate(-1px,0)}50%{transform:translate(1px,-2px)}100%{transform:translate(0,1px)}}
+
+/* कार के रंग */
+.car-red{background:linear-gradient(180deg,#ff2a2a,#b91c1c);box-shadow:0 12px 24px rgba(239,68,68,.75)}
+.car-yellow{background:linear-gradient(180deg,#fde047,#ca8a04);box-shadow:0 12px 24px rgba(234,179,8,.75)}
+.car-blue{background:linear-gradient(180deg,#38bdf8,#1d4ed8);box-shadow:0 12px 24px rgba(59,130,246,.75)}
+.car-green{background:linear-gradient(180deg,#4ade80,#15803d);box-shadow:0 12px 24px rgba(34,197,94,.75)}
+.car-purple{background:linear-gradient(180deg,#c084fc,#7e22ce);box-shadow:0 12px 24px rgba(168,85,247,.75)}
+
+.hl{position:absolute;top:-5px;width:12px;height:6px;background:#fef08a;border-radius:4px;box-shadow:0 0 12px #fef08a}
+.hl-l{left:8px}.hl-r{right:8px}
+.beam{position:absolute;top:-115px;width:28px;height:115px;background:linear-gradient(to top,rgba(254,240,138,.55),transparent);clip-path:polygon(30% 100%,70% 100%,100% 0,0 0);pointer-events:none}
+.bm-l{left:0}.bm-r{right:0}
+
+.wh{position:absolute;width:7px;height:20px;background:#090d16;border-radius:3px}
+.w1{left:-7px;top:16px}.w2{right:-7px;top:16px}.w3{left:-7px;bottom:16px}.w4{right:-7px;bottom:16px}
+.glass{width:40px;height:20px;background:#bae6fd;border-radius:6px;margin:15px auto 0}
+.roof{width:36px;height:25px;background:rgba(255,255,255,.22);border-radius:5px;margin:6px auto 0}
+
+/* आइटम्स और बैरियर */
+.item-slot{position:fixed;width:33.33%;display:flex;justify-content:center;align-items:center;z-index:4}
+
+.shiny-coin{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#fef08a,#facc15 55%,#ca8a04);border:3px solid #fef9c3;box-shadow:0 0 16px #facc15,inset 0 0 6px #fff;display:flex;align-items:center;justify-content:center;font-weight:900;color:#854d0e;font-size:18px;animation:spinGlow .7s infinite alternate}
+@keyframes spinGlow{0%{transform:scale(1);box-shadow:0 0 12px #facc15}100%{transform:scale(1.12);box-shadow:0 0 24px #fef08a}}
+
+.diamond-item{font-size:36px;animation:spinGlow .6s infinite alternate}
+.blue-glow{filter:drop-shadow(0 0 14px #38bdf8)}
+.green-glow{filter:drop-shadow(0 0 18px #4ade80)}
+
+.barrier{width:76%;height:26px;background:repeating-linear-gradient(45deg,#ef4444 0 10px,#ffffff 10px 20px);border:2px solid #991b1b;border-radius:6px;box-shadow:0 6px 14px rgba(0,0,0,.65)}
+
+.ctrl{position:fixed;bottom:16px;left:12px;right:12px;display:flex;gap:12px;z-index:10}
+.ctrl button{flex:1;padding:18px;font-size:20px;font-weight:bold;border:none;border-radius:14px;background:rgba(37,99,235,.9);color:#fff;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.ctrl button:active{transform:scale(.96);background:#1d4ed8}
+
+/* जीत और हार स्क्रीन */
+.overlay-box{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:24px;z-index:25}
+.overlay-box .big{font-size:88px;margin-bottom:10px}
+.overlay-box button{margin-top:20px;padding:15px 34px;font-size:20px;font-weight:bold;border:none;border-radius:12px;background:#86efac;color:#090d16;cursor:pointer}
+.overlay-box button:active{transform:scale(.96)}
+</style>
+</head>
+<body>
+
+<!-- मेन मेन्यू -->
+<div id="mainMenu">
+  <h1>SP Car Game</h1>
+  <div class="preview-box">
+    <div id="previewCar" class="car-red"></div>
+    <div id="carNameTag">Red Car</div>
+  </div>
+  <button id="playBtn" class="menu-btn" onclick="startGame()">▶️ Play</button>
+  <button id="changeCarBtn" class="menu-btn" onclick="changeCar()">🚗 Car Change</button>
+</div>
+
+<!-- HUD + ऊपर थ्री-लाइन मेन्यू बटन -->
+<div id="hud">
+  <div class="counts">
+    <span>🪙<b id="cCount">0</b>/10</span>
+    <span>💎<b id="bCount">0</b>/5</span>
+    <span>💚<b id="gCount">0</b>/1</span>
+  </div>
+  <button id="hamburgerBtn" onclick="openMainMenu()" aria-label="Menu">☰</button>
+</div>
+
+<!-- गेम रोड -->
+<div id="road">
+  <div class="line l1" id="l1"></div>
+  <div class="line l2" id="l2"></div>
+  <div id="carBox">
+    <div id="car" class="car-red">
+      <div class="beam bm-l"></div><div class="beam bm-r"></div>
+      <div class="hl hl-l"></div><div class="hl hl-r"></div>
+      <div class="wh w1"></div><div class="wh w2"></div><div class="wh w3"></div><div class="wh w4"></div>
+      <div class="glass"></div>
+      <div class="roof"></div>
+    </div>
+  </div>
+</div>
+
+<!-- कंट्रोल बटन -->
+<div class="ctrl">
+  <button onclick="go(-1)">⬅️ Left</button>
+  <button onclick="go(1)">Right ➡️</button>
+</div>
+
+<!-- आउट होने की स्क्रीन -->
+<div id="loseBox" class="overlay-box">
+  <div class="big">💥🚧</div>
+  <h1 style="color:#f87171;font-size:30px;margin-bottom:8px">फिर से आप शुरू करें</h1>
+  <button onclick="playAgain()">▶️ Play</button>
+</div>
+
+<!-- जीत की स्क्रीन -->
+<div id="winBox" class="overlay-box">
+  <div class="big">💚🏆✨</div>
+  <h1 style="color:#4ade80;font-size:32px;margin-bottom:8px">मैच जीत गए!</h1>
+  <p>तुमने ग्रीन डायमंड जमा कर लिया!</p>
+  <button onclick="playAgain()">▶️ Play</button>
+</div>
+
+<script>
+const road=document.getElementById("road"),carBox=document.getElementById("carBox"),car=document.getElementById("car");
+const previewCar=document.getElementById("previewCar"),carNameTag=document.getElementById("carNameTag");
+const l1=document.getElementById("l1"),l2=document.getElementById("l2");
+const cCountEl=document.getElementById("cCount"),bCountEl=document.getElementById("bCount"),gCountEl=document.getElementById("gCount");
+const loseBox=document.getElementById("loseBox"),winBox=document.getElementById("winBox"),mainMenu=document.getElementById("mainMenu");
+
+const carStyles=[
+  {cls:"car-red",name:"Red Car"},
+  {cls:"car-yellow",name:"Yellow Car"},
+  {cls:"car-blue",name:"Blue Car"},
+  {cls:"car-green",name:"Green Car"},
+  {cls:"car-purple",name:"Purple Car"}
+];
+let carIdx=0;
+
+let lane=1,startX=0,ac=null,engOsc=null;
+let coins=0,blueDiamonds=0,greenDiamonds=0;
+let items=[],spawnCounter=0,waveNum=0,gameOver=false,started=false;
+
+function getCurrentDropType(){
+  if(coins<10)return "coin";
+  if(blueDiamonds<5)return "blue";
+  return "green";
+}
+
+function setRoadRun(run){
+  let st=run?"running":"paused";
+  l1.style.animationPlayState=st;
+  l2.style.animationPlayState=st;
+}
+
+function startEngine(){
+  try{
+    if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();
+    if(ac.state==="suspended")ac.resume();
+    if(!engOsc){
+      engOsc=ac.createOscillator();
+      let g=ac.createGain();
+      engOsc.type="sawtooth";
+      engOsc.frequency.value=58;
+      g.gain.value=0.06;
+      engOsc.connect(g);g.connect(ac.destination);
+      engOsc.start();
+    }
+  }catch(e){}
+}
+
+function tone(freq,dur,type="sine",vol=0.2,delay=0){
+  if(!ac)return;
+  let t=ac.currentTime+delay;
+  let o=ac.createOscillator(),g=ac.createGain();
+  o.type=type;o.frequency.setValueAtTime(freq,t);
+  g.gain.setValueAtTime(vol,t);
+  g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  o.connect(g);g.connect(ac.destination);
+  o.start(t);o.stop(t+dur);
+}
+
+function changeCar(){
+  startEngine();
+  tone(520,0.09,"triangle",0.2,0);
+  carIdx=(carIdx+1)%carStyles.length;
+  let cur=carStyles[carIdx];
+  previewCar.className=cur.cls;
+  car.className=cur.cls;
+  carNameTag.innerText=cur.name;
+}
+
+function clearAllItems(){
+  road.querySelectorAll(".item-slot").forEach(el=>el.remove());
+  items=[];
+}
+
+function updateHud(){
+  cCountEl.innerText=Math.min(coins,10);
+  bCountEl.innerText=Math.min(blueDiamonds,5);
+  gCountEl.innerText=Math.min(greenDiamonds,1);
+}
+
+function spawnWave(){
+  if(!started||gameOver)return;
+  waveNum++;
+
+  let kind=getCurrentDropType();
+  let rewardLane=Math.floor(Math.random()*3);
+  let rSlot=document.createElement("div");
+  rSlot.className="item-slot";
+  rSlot.style.left=(rewardLane*33.33)+"%";
+  rSlot.style.top="-50px";
+
+  if(kind==="coin"){
+    rSlot.innerHTML='<div class="shiny-coin">★</div>';
+  }else if(kind==="blue"){
+    rSlot.innerHTML='<div class="diamond-item blue-glow">💎</div>';
+  }else{
+    rSlot.innerHTML='<div class="diamond-item green-glow">💚</div>';
+  }
+  road.appendChild(rSlot);
+  items.push({el:rSlot,lane:rewardLane,y:-50,type:"reward",kind});
+
+  // बैरियर कॉइन/डायमंड से कम आएगा (हर 3वीं लहर में 1 बार) ताकि खेलने में मज़ा आए
+  if(waveNum%3===0){
+    let otherLanes=[0,1,2].filter(x=>x!==rewardLane);
+    let barLane=otherLanes[Math.floor(Math.random()*otherLanes.length)];
+    let bSlot=document.createElement("div");
+    bSlot.className="item-slot";
+    bSlot.style.left=(barLane*33.33)+"%";
+    bSlot.style.top="-50px";
+    bSlot.innerHTML='<div class="barrier"></div>';
+    road.appendChild(bSlot);
+    items.push({el:bSlot,lane:barLane,y:-50,type:"barrier"});
+  }
+}
+
+function resetAndRun(){
+  clearAllItems();
+  coins=0;
+  blueDiamonds=0;
+  greenDiamonds=0;
+  lane=1;
+  spawnCounter=0;
+  waveNum=0;
+  gameOver=false;
+  started=true;
+  carBox.style.left="33.33%";
+  loseBox.style.display="none";
+  winBox.style.display="none";
+  mainMenu.style.display="none";
+  updateHud();
+  setRoadRun(true);
+  spawnWave();
+}
+
+function startGame(){
+  startEngine();
+  tone(660,0.14,"triangle",0.22,0);
+  resetAndRun();
+}
+
+function playAgain(){
+  startEngine();
+  tone(660,0.14,"triangle",0.22,0);
+  resetAndRun();
+}
+
+function openMainMenu(){
+  startEngine();
+  tone(440,0.1,"triangle",0.18,0);
+  started=false;
+  gameOver=false;
+  setRoadRun(false);
+  clearAllItems();
+  loseBox.style.display="none";
+  winBox.style.display="none";
+  mainMenu.style.display="flex";
+}
+
+function pickupSound(kind){
+  startEngine();
+  if(kind==="coin"){
+    tone(920,0.08,"sine",0.22,0);
+    tone(1240,0.12,"sine",0.22,0.06);
+  }else if(kind==="blue"){
+    tone(784,0.12,"triangle",0.25,0);
+    tone(1175,0.16,"triangle",0.25,0.08);
+  }else{
+    tone(880,0.12,"sine",0.25,0);
+    tone(1318,0.16,"sine",0.25,0.08);
+    tone(1760,0.2,"sine",0.22,0.16);
+  }
+}
+
+function crashSound(){
+  startEngine();
+  tone(140,0.35,"sawtooth",0.35,0);
+  tone(75,0.45,"square",0.3,0.08);
+}
+
+function templeTreasureWinSound(){
+  startEngine();
+  const notes=[523.25,659.25,783.99,1046.5,1318.5,1567.98,2093.0];
+  notes.forEach((f,i)=>{
+    tone(f,0.65,"sine",0.22,i*0.09);
+    tone(f*1.5,0.45,"triangle",0.08,i*0.09);
+  });
+}
+
+function revSound(){
+  startEngine();
+  if(engOsc&&ac){
+    let t=ac.currentTime;
+    engOsc.frequency.setValueAtTime(95,t);
+    engOsc.frequency.exponentialRampToValueAtTime(58,t+0.18);
+  }
+  if(navigator.vibrate)navigator.vibrate(25);
+}
+
+function go(dir){
+  if(!started||gameOver)return;
+  lane=Math.max(0,Math.min(2,lane+dir));
+  carBox.style.left=(lane*33.33)+"%";
+  revSound();
+}
+
+function handleReward(kind){
+  pickupSound(kind);
+  if(navigator.vibrate)navigator.vibrate(30);
+
+  if(kind==="coin" && coins<10){
+    coins++;
+  }else if(kind==="blue" && blueDiamonds<5){
+    blueDiamonds++;
+  }else if(kind==="green" && greenDiamonds<1){
+    greenDiamonds=1;
+    updateHud();
+    gameOver=true;
+    started=false;
+    setRoadRun(false);
+    templeTreasureWinSound();
+    if(navigator.vibrate)navigator.vibrate([80,50,120]);
+    winBox.style.display="flex";
+    return;
+  }
+  updateHud();
+}
+
+setInterval(()=>{
+  if(!started||gameOver)return;
+
+  spawnCounter++;
+  if(spawnCounter>=34){
+    spawnWave();
+    spawnCounter=0;
+  }
+
+  let carRect=car.getBoundingClientRect();
+
+  for(let i=items.length-1;i>=0;i--){
+    let it=items[i];
+    if(!it.el||!it.el.parentNode){
+      items.splice(i,1);
+      continue;
+    }
+
+    it.y+=11;
+    it.el.style.top=it.y+"px";
+
+    let targetEl=it.el.firstChild||it.el;
+    let rect=targetEl.getBoundingClientRect();
+    let hit=(rect.bottom>carRect.top+6 && rect.top<carRect.bottom-6 && it.lane===lane);
+
+    if(hit){
+      if(it.type==="barrier"){
+        gameOver=true;
+        started=false;
+        setRoadRun(false);
+        crashSound();
+        if(navigator.vibrate)navigator.vibrate([120,60,150]);
+        loseBox.style.display="flex";
+        return;
+      }else{
+        let k=it.kind;
+        it.el.remove();
+        items.splice(i,1);
+        handleReward(k);
+        continue;
+      }
+    }
+
+    if(it.y>window.innerHeight+60){
+      it.el.remove();
+      items.splice(i,1);
+    }
+  }
+},16);
+
+road.addEventListener("touchstart",e=>{startX=e.touches[0].clientX});
+road.addEventListener("touchend",e=>{
+  if(!started||gameOver)return;
+  let diff=e.changedTouches[0].clientX-startX;
+  if(diff>30)go(1);
+  else if(diff<-30)go(-1);
+});
+
+setRoadRun(false);
+updateHud();
+</script>
+</body>
+</html>
